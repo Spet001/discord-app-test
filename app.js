@@ -1,71 +1,91 @@
 import 'dotenv/config';
 import express from 'express';
 import {
-  ButtonStyleTypes,
-  InteractionResponseFlags,
   InteractionResponseType,
   InteractionType,
-  MessageComponentTypes,
   verifyKeyMiddleware,
 } from 'discord-interactions';
-import { getRandomEmoji, DiscordRequest } from './utils.js';
-import { getShuffledOptions, getResult } from './game.js';
+import { DiscordRequest } from './utils.js';
+import fs from 'fs';
+import path from 'path';
 
-// Create an express app
+// Criar um aplicativo expresso
 const app = express();
-// Get port, or default to 3000
+// Obter porta ou padrão para 3000
 const PORT = process.env.PORT || 3000;
-// To keep track of our active games
-const activeGames = {};
 
 /**
- * Interactions endpoint URL where Discord will send HTTP requests
- * Parse request body and verifies incoming requests using discord-interactions package
+ * Endpoint de interações onde o Discord enviará solicitações HTTP
+ * Analise o corpo da solicitação e verifique as solicitações recebidas usando o pacote discord-interactions
  */
 app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async function (req, res) {
-  // Interaction id, type and data
-  const { id, type, data } = req.body;
+  // Tipo e dados da interação
+  const { type, data } = req.body;
 
   /**
-   * Handle verification requests
+   * Lidar com solicitações de verificação
    */
   if (type === InteractionType.PING) {
     return res.send({ type: InteractionResponseType.PONG });
   }
 
   /**
-   * Handle slash command requests
-   * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
+   * Lidar com solicitações de comando de barra
    */
   if (type === InteractionType.APPLICATION_COMMAND) {
     const { name } = data;
 
-    // "test" command
-    if (name === 'test') {
-      // Send a message into the channel where command was triggered from
+    // comando "faceless"
+    if (name === 'faceless') {
+      const messages = [
+        'EAE MANO BLZ',
+        'GUZAAAAAAAA',
+        'JOGOS USADOS BARATOS GUZHADOS SÓ NA FACELESSGAMES.COM.BR',
+        'FACELESSGAMES.COM.BR MELHOR PIOR LOJA DA AMAZONIA!!!',
+        'UUUUUUURRR PRA CIMA AONDE???',
+        'GUZZZZZZEI',
+        'UUUUUR MANO BLZ MANO BLZ',
+        'BLZ MANO BLZ',
+        'DAAAAAL UMA CHUOPADINHAAAAAAA',
+      ];
+
+      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
+      // Verifica aleatoriamente se deve enviar uma imagem
+      if (Math.random() < 0.2) { // 20% de chance de enviar uma imagem
+        const assetsDir = path.join(process.cwd(), 'assets');
+        const imageFiles = fs.readdirSync(assetsDir).filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file));
+
+        if (imageFiles.length > 0) {
+          const randomImage = imageFiles[Math.floor(Math.random() * imageFiles.length)];
+          // A funcionalidade de enviar a imagem ainda precisa ser implementada
+          // Por enquanto, apenas enviaremos o nome do arquivo junto com a mensagem
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: `${randomMessage}\nImagem: ${randomImage}`,
+            },
+          });
+        }
+      }
+
+      // Envia uma mensagem aleatória
       return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          flags: InteractionResponseFlags.IS_COMPONENTS_V2,
-          components: [
-            {
-              type: MessageComponentTypes.TEXT_DISPLAY,
-              // Fetches a random emoji to send from a helper function
-              content: `hello world ${getRandomEmoji()}`
-            }
-          ]
+          content: randomMessage,
         },
       });
     }
 
-    console.error(`unknown command: ${name}`);
-    return res.status(400).json({ error: 'unknown command' });
+    console.error(`comando desconhecido: ${name}`);
+    return res.status(400).json({ error: 'comando desconhecido' });
   }
 
-  console.error('unknown interaction type', type);
-  return res.status(400).json({ error: 'unknown interaction type' });
+  console.error('tipo de interação desconhecido', type);
+  return res.status(400).json({ error: 'tipo de interação desconhecido' });
 });
 
 app.listen(PORT, () => {
-  console.log('Listening on port', PORT);
+  console.log('Ouvindo na porta', PORT);
 });
